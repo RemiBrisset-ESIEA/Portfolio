@@ -55,37 +55,54 @@
         },
 
         contactForm: function () {
-            $('.rwt-dynamic-form').on('submit', function (e) {
-				e.preventDefault();
-				var _self = $(this);
-				var __selector = _self.closest('input,textarea');
-				_self.closest('div').find('input,textarea').removeAttr('style');
-				_self.find('.error-msg').remove();
-				_self.closest('div').find('button[type="submit"]').attr('disabled', 'disabled');
-				var data = $(this).serialize();
-				$.ajax({
-					url: 'mail.php',
-					type: "post",
-					dataType: 'json',
-					data: data,
-					success: function (data) {
-						_self.closest('div').find('button[type="submit"]').removeAttr('disabled');
-						if (data.code == false) {
-							_self.closest('div').find('[name="' + data.field + '"]');
-							_self.find('.rn-btn').after('<div class="error-msg"><p>*' + data.err + '</p></div>');
-						} else {
-							$('.error-msg').hide();
-							$('.form-group').removeClass('focused');
-							_self.find('.rn-btn').after('<div class="success-msg"><p>' + data.success + '</p></div>');
-							_self.closest('div').find('input,textarea').val('');
+            // 1. Initialisation d'EmailJS (Met ta clé publique ici)
+            emailjs.init("sqV7bCKM9LvKO-feG");
 
-							setTimeout(function () {
-								$('.success-msg').fadeOut('slow');
-							}, 5000);
-						}
-					}
-				});
-			});
+            $('.rwt-dynamic-form').on('submit', function (e) {
+                e.preventDefault();
+                var _self = $(this);
+                var btn = _self.find('button[type="submit"]');
+                
+                // Sauvegarde du texte du bouton
+                var originalText = btn.html(); // Utilise .html() pour garder la flèche
+                
+                // UI : On montre que ça charge
+                btn.attr('disabled', 'disabled');
+                btn.text('Envoi en cours...');
+
+                // Tes identifiants
+                var serviceID = 'service_qfr2wsi'; // C'est ton ID Gmail
+                var templateID = 'template_0inr4gd'; // Remplace par l'ID copié à l'étape précédente
+
+                // Envoi via EmailJS
+                emailjs.sendForm(serviceID, templateID, this)
+                    .then(function() {
+                        // SUCCÈS
+                        btn.removeAttr('disabled').html(originalText);
+                        
+                        // Nettoyage des anciens messages
+                        _self.find('.error-msg, .success-msg').remove();
+                        
+                        // Affichage du message de succès (style identique à ton site)
+                        _self.find('.rn-btn').after('<div class="success-msg"><p>Message envoyé avec succès ! Merci.</p></div>');
+                        
+                        // Vider le formulaire
+                        _self.trigger("reset");
+
+                        // Faire disparaître le message après 5 secondes
+                        setTimeout(function () {
+                            $('.success-msg').fadeOut('slow');
+                        }, 5000);
+
+                    }, function(error) {
+                        // ERREUR
+                        console.log("Erreur EmailJS:", error);
+                        btn.removeAttr('disabled').html(originalText);
+                        
+                        _self.find('.error-msg, .success-msg').remove();
+                        _self.find('.rn-btn').after('<div class="error-msg"><p>Erreur lors de l\'envoi. Vérifiez votre connexion.</p></div>');
+                    });
+            });
         },
 
         
